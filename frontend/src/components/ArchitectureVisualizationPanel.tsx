@@ -232,6 +232,16 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
   const [edgeEditorError, setEdgeEditorError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editorError, setEditorError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setToastMessage(null), 1400);
+    return () => window.clearTimeout(timeout);
+  }, [toastMessage]);
 
   useEffect(() => {
     const syncedArchitecture = architecture ? syncArchitectureStructure(architecture) : null;
@@ -424,6 +434,7 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
         },
       });
       commitArchitecture(nextArchitecture, selectedNodeId, selectedEdgeId);
+      setToastMessage("Node saved");
       return;
     }
 
@@ -446,6 +457,7 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
       },
     });
     commitArchitecture(nextArchitecture, nodeId, selectedEdgeId);
+    setToastMessage("Node added");
   }
 
   function deleteSelectedNode(): void {
@@ -464,6 +476,7 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
       },
     });
     commitArchitecture(nextArchitecture, null, selectedEdgeId);
+    setToastMessage("Node deleted");
   }
 
   function saveEdge(): void {
@@ -510,6 +523,7 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
         },
       });
       commitArchitecture(nextArchitecture, selectedNodeId, selectedEdgeId);
+      setToastMessage("Connection saved");
       return;
     }
 
@@ -537,6 +551,7 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
       },
     });
     commitArchitecture(nextArchitecture, selectedNodeId, edgeId);
+    setToastMessage("Connection added");
   }
 
   function deleteSelectedEdge(): void {
@@ -552,6 +567,7 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
       },
     });
     commitArchitecture(nextArchitecture, selectedNodeId, null);
+    setToastMessage("Connection deleted");
   }
 
   const renderedArchitecture = editableArchitecture;
@@ -559,7 +575,34 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
   return (
     <SectionCard title="Architecture" subtitle="System graph with the key scaling notes">
       {!architecture && isLoading ? (
-        <StateNotice title="Generating architecture" message="Mapping structured requirements into a system graph." tone="loading" />
+        <div className="skeleton-stack" aria-label="Generating architecture">
+          <div className="skeleton-card">
+            <div className="skeleton skeleton-line" style={{ width: "42%" }} />
+            <div className="skeleton skeleton-line" style={{ width: "86%", marginTop: 10 }} />
+          </div>
+          <div className="skeleton-card">
+            <div className="skeleton" style={{ height: 240 }} />
+          </div>
+          <div className="skeleton-grid-4">
+            <div className="skeleton-card">
+              <div className="skeleton skeleton-line" style={{ width: "60%" }} />
+              <div className="skeleton skeleton-line-lg" style={{ width: "34%", marginTop: 12 }} />
+            </div>
+            <div className="skeleton-card">
+              <div className="skeleton skeleton-line" style={{ width: "64%" }} />
+              <div className="skeleton skeleton-line-lg" style={{ width: "38%", marginTop: 12 }} />
+            </div>
+            <div className="skeleton-card">
+              <div className="skeleton skeleton-line" style={{ width: "56%" }} />
+              <div className="skeleton skeleton-line-lg" style={{ width: "32%", marginTop: 12 }} />
+            </div>
+            <div className="skeleton-card">
+              <div className="skeleton skeleton-line" style={{ width: "62%" }} />
+              <div className="skeleton skeleton-line-lg" style={{ width: "36%", marginTop: 12 }} />
+            </div>
+          </div>
+          <StateNotice title="Generating architecture" message="Mapping structured requirements into a system graph." tone="loading" />
+        </div>
       ) : null}
       {error ? <StateNotice title="Architecture error" message={error} tone="error" /> : null}
       {!architecture && !isLoading ? (
@@ -853,6 +896,8 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
               selectEdge(edgeId);
             }}
           />
+
+          {toastMessage ? <div className="action-toast">{toastMessage}</div> : null}
 
           <p className="body-copy compact-copy">{renderedArchitecture.overview}</p>
 
