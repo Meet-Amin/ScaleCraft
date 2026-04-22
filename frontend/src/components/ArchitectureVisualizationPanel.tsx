@@ -841,7 +841,18 @@ export function ArchitectureVisualizationPanel({ architecture, isLoading, error 
 
           <p className="drag-hint">Drag nodes in the graph to rearrange the layout.</p>
 
-          <ArchitectureGraph nodes={renderedArchitecture.graph_json.nodes} edges={renderedArchitecture.graph_json.edges} />
+          <ArchitectureGraph
+            nodes={renderedArchitecture.graph_json.nodes}
+            edges={renderedArchitecture.graph_json.edges}
+            selectedNodeId={selectedNodeId}
+            selectedEdgeId={selectedEdgeId}
+            onSelectNode={(nodeId) => {
+              selectNode(nodeId);
+            }}
+            onSelectEdge={(edgeId) => {
+              selectEdge(edgeId);
+            }}
+          />
 
           <p className="body-copy compact-copy">{renderedArchitecture.overview}</p>
 

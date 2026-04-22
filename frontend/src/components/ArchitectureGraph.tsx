@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 
 import type { ArchitectureGraphEdge, ArchitectureGraphNode } from "../api/types";
 import { titleCase } from "../utils/formatters";
@@ -7,6 +7,10 @@ import { titleCase } from "../utils/formatters";
 interface ArchitectureGraphProps {
   nodes: ArchitectureGraphNode[];
   edges: ArchitectureGraphEdge[];
+  selectedNodeId?: string | null;
+  selectedEdgeId?: string | null;
+  onSelectNode?: (nodeId: string) => void;
+  onSelectEdge?: (edgeId: string) => void;
 }
 
 interface PositionedNode extends ArchitectureGraphNode {
@@ -19,6 +23,14 @@ interface DragState {
   pointerId: number;
   offsetX: number;
   offsetY: number;
+}
+
+interface PanState {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startTranslateX: number;
+  startTranslateY: number;
 }
 
 const lanes = ["edge", "services", "state", "async", "storage", "observability", "external"] as const;
@@ -65,19 +77,19 @@ function positionNodes(nodes: ArchitectureGraphNode[]): PositionedNode[] {
 }
 
 function nodeColor(kind: ArchitectureGraphNode["kind"]): string {
-  if (kind === "database" || kind === "search") {
-    return "#c78a5f";
+  if (kind === "database" || kind === "search" || kind === "object_storage") {
+    return "#10b981";
   }
   if (kind === "cache" || kind === "queue" || kind === "worker") {
-    return "#d3a87c";
+    return "#ff6b3d";
   }
   if (kind === "observability") {
-    return "#98ae8a";
+    return "#0f172a";
   }
   if (kind === "external_api") {
-    return "#b58b7c";
+    return "#334155";
   }
-  return "#b56d4e";
+  return "#1e76ff";
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -88,17 +100,34 @@ function toCoordinate(clientValue: number, origin: number, renderedSize: number,
   return ((clientValue - origin) / renderedSize) * viewBoxSize;
 }
 
-export function ArchitectureGraph({ nodes, edges }: ArchitectureGraphProps) {
+export function ArchitectureGraph({
+  nodes,
+  edges,
+  selectedNodeId,
+  selectedEdgeId,
+  onSelectNode,
+  onSelectEdge,
+}: ArchitectureGraphProps) {
   const defaultNodes = useMemo(() => positionNodes(nodes), [nodes]);
+  const defaultNodePositions = useMemo(
+    () => Object.fromEntries(defaultNodes.map((node) => [node.id, { x: node.x, y: node.y }])),
+    [defaultNodes],
+  );
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({});
   const [dragState, setDragState] = useState<DragState | null>(null);
+  const [panState, setPanState] = useState<PanState | null>(null);
+  const [view, setView] = useState<{ scale: number; translateX: number; translateY: number }>({
+    scale: 1,
+    translateX: 0,
+    translateY: 0,
+  });
 
   useEffect(() => {
-    setNodePositions(
-      Object.fromEntries(defaultNodes.map((node) => [node.id, { x: node.x, y: node.y }])),
-    );
+    setNodePositions(defaultNodePositions);
     setDragState(null);
-  }, [defaultNodes]);
+    setPanState(null);
+    setView({ scale: 1, translateX: 0, translateY: 0 });
+  }, [defaultNodePositions]);
 
   const positionedNodes = defaultNodes.map((node) => ({
     ...node,
@@ -107,21 +136,38 @@ export function ArchitectureGraph({ nodes, edges }: ArchitectureGraphProps) {
   const nodeMap = new Map(positionedNodes.map((node) => [node.id, node]));
   const height = Math.max(360, 120 + Math.max(...positionedNodes.map((node) => node.y), 0));
 
+  function toContentCoordinate(clientX: number, clientY: number, svg: SVGSVGElement): { x: number; y: number } {
+    const bounds = svg.getBoundingClientRect();
+    const viewBoxX = toCoordinate(clientX, bounds.left, bounds.width, graphWidth);
+    const viewBoxY = toCoordinate(clientY, bounds.top, bounds.height, height);
+
+    return {
+      x: (viewBoxX - view.translateX) / view.scale,
+      y: (viewBoxY - view.translateY) / view.scale,
+    };
+  }
+
+  function toViewBoxCoordinate(clientX: number, clientY: number, svg: SVGSVGElement): { x: number; y: number } {
+    const bounds = svg.getBoundingClientRect();
+    return {
+      x: toCoordinate(clientX, bounds.left, bounds.width, graphWidth),
+      y: toCoordinate(clientY, bounds.top, bounds.height, height),
+    };
+  }
+
   function updateNodePosition(nodeId: string, clientX: number, clientY: number, currentTarget: SVGGElement): void {
     const svg = currentTarget.ownerSVGElement;
     if (!svg || dragState?.nodeId !== nodeId) {
       return;
     }
 
-    const bounds = svg.getBoundingClientRect();
-    const pointerX = toCoordinate(clientX, bounds.left, bounds.width, graphWidth);
-    const pointerY = toCoordinate(clientY, bounds.top, bounds.height, height);
+    const pointer = toContentCoordinate(clientX, clientY, svg);
 
     setNodePositions((current) => ({
       ...current,
       [nodeId]: {
-        x: clamp(pointerX - dragState.offsetX, 24, graphWidth - nodeWidth - 24),
-        y: clamp(pointerY - dragState.offsetY, 40, 1200),
+        x: clamp(pointer.x - dragState.offsetX, 24, graphWidth - nodeWidth - 24),
+        y: clamp(pointer.y - dragState.offsetY, 40, 1200),
       },
     }));
   }
@@ -132,17 +178,94 @@ export function ArchitectureGraph({ nodes, edges }: ArchitectureGraphProps) {
       return;
     }
 
-    const bounds = svg.getBoundingClientRect();
-    const pointerX = toCoordinate(event.clientX, bounds.left, bounds.width, graphWidth);
-    const pointerY = toCoordinate(event.clientY, bounds.top, bounds.height, height);
+    onSelectNode?.(node.id);
+    const pointer = toContentCoordinate(event.clientX, event.clientY, svg);
 
     setDragState({
       nodeId: node.id,
       pointerId: event.pointerId,
-      offsetX: pointerX - node.x,
-      offsetY: pointerY - node.y,
+      offsetX: pointer.x - node.x,
+      offsetY: pointer.y - node.y,
     });
     event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePanStart(event: ReactPointerEvent<SVGRectElement>): void {
+    const svg = event.currentTarget.ownerSVGElement;
+    if (!svg) {
+      return;
+    }
+
+    const start = toViewBoxCoordinate(event.clientX, event.clientY, svg);
+    setPanState({
+      pointerId: event.pointerId,
+      startX: start.x,
+      startY: start.y,
+      startTranslateX: view.translateX,
+      startTranslateY: view.translateY,
+    });
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePanMove(event: ReactPointerEvent<SVGRectElement>): void {
+    if (!panState || panState.pointerId !== event.pointerId) {
+      return;
+    }
+    const svg = event.currentTarget.ownerSVGElement;
+    if (!svg) {
+      return;
+    }
+
+    const current = toViewBoxCoordinate(event.clientX, event.clientY, svg);
+    const deltaX = current.x - panState.startX;
+    const deltaY = current.y - panState.startY;
+
+    setView((prev) => ({
+      ...prev,
+      translateX: panState.startTranslateX + deltaX,
+      translateY: panState.startTranslateY + deltaY,
+    }));
+  }
+
+  function handlePanEnd(event: ReactPointerEvent<SVGRectElement>): void {
+    if (!panState || panState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setPanState(null);
+  }
+
+  function resetLayout(): void {
+    setNodePositions(defaultNodePositions);
+    setDragState(null);
+  }
+
+  function resetView(): void {
+    setView({ scale: 1, translateX: 0, translateY: 0 });
+    setPanState(null);
+  }
+
+  function handleWheel(event: ReactWheelEvent<SVGSVGElement>): void {
+    const svg = event.currentTarget;
+    const zoomIntensity = 0.0012;
+    const nextScale = clamp(view.scale * (1 - event.deltaY * zoomIntensity), 0.55, 2.6);
+
+    event.preventDefault();
+    if (nextScale === view.scale) {
+      return;
+    }
+    const pointer = toViewBoxCoordinate(event.clientX, event.clientY, svg);
+    const contentX = (pointer.x - view.translateX) / view.scale;
+    const contentY = (pointer.y - view.translateY) / view.scale;
+
+    setView({
+      scale: nextScale,
+      translateX: pointer.x - contentX * nextScale,
+      translateY: pointer.y - contentY * nextScale,
+    });
   }
 
   function handlePointerMove(event: ReactPointerEvent<SVGGElement>, nodeId: string): void {
@@ -166,69 +289,120 @@ export function ArchitectureGraph({ nodes, edges }: ArchitectureGraphProps) {
 
   return (
     <div className="graph-shell">
-      <svg viewBox={`0 0 ${graphWidth} ${height}`} className="architecture-graph" role="img" aria-label="Architecture graph">
+      <div className="graph-toolbar">
+        <button className="ghost-button" type="button" onClick={resetLayout}>
+          Auto-layout
+        </button>
+        <button className="ghost-button ghost-button-inline" type="button" onClick={resetView}>
+          Reset view
+        </button>
+      </div>
+      <svg
+        viewBox={`0 0 ${graphWidth} ${height}`}
+        className="architecture-graph"
+        role="img"
+        aria-label="Architecture graph"
+        onWheel={handleWheel}
+      >
         <defs>
           <marker id="graph-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#b56d4e" />
+            <path d="M0,0 L0,6 L9,3 z" fill="#1e76ff" />
           </marker>
         </defs>
 
-        {lanes.map((lane, index) => (
-          <g key={lane}>
-            <text x={72 + index * 246} y={28} className="graph-lane-label">
-              {titleCase(lane)}
-            </text>
-          </g>
-        ))}
+        <rect
+          className={panState ? "graph-pan-surface graph-pan-surface-panning" : "graph-pan-surface"}
+          x={0}
+          y={0}
+          width={graphWidth}
+          height={height}
+          onPointerDown={handlePanStart}
+          onPointerMove={handlePanMove}
+          onPointerUp={handlePanEnd}
+          onPointerCancel={handlePanEnd}
+        />
 
-        {edges.map((edge) => {
-          const source = nodeMap.get(edge.source);
-          const target = nodeMap.get(edge.target);
-          if (!source || !target) {
-            return null;
-          }
-
-          const startX = source.x + 148;
-          const startY = source.y + 30;
-          const endX = target.x;
-          const endY = target.y + 30;
-          const curve = Math.max(50, Math.abs(endX - startX) * 0.45);
-          const path = `M ${startX} ${startY} C ${startX + curve} ${startY}, ${endX - curve} ${endY}, ${endX} ${endY}`;
-
-          return (
-            <g key={edge.id}>
-              <path
-                d={path}
-                className={edge.critical_path ? "graph-edge graph-edge-critical" : "graph-edge"}
-                markerEnd="url(#graph-arrow)"
-              />
-              <text x={(startX + endX) / 2} y={(startY + endY) / 2 - 8} className="graph-edge-label">
-                {edge.protocol}
+        <g transform={`translate(${view.translateX} ${view.translateY}) scale(${view.scale})`}>
+          {lanes.map((lane, index) => (
+            <g key={lane}>
+              <text x={72 + index * 246} y={28} className="graph-lane-label">
+                {titleCase(lane)}
               </text>
             </g>
-          );
-        })}
+          ))}
 
-        {positionedNodes.map((node) => (
-          <g
-            key={node.id}
-            transform={`translate(${node.x}, ${node.y})`}
-            className={dragState?.nodeId === node.id ? "graph-node graph-node-dragging" : "graph-node"}
-            onPointerDown={(event) => handlePointerDown(event, node)}
-            onPointerMove={(event) => handlePointerMove(event, node.id)}
-            onPointerUp={(event) => handlePointerEnd(event, node.id)}
-            onPointerCancel={(event) => handlePointerEnd(event, node.id)}
-          >
-            <rect width={nodeWidth} height={nodeHeight} rx="18" className="graph-node-card" stroke={nodeColor(node.kind)} />
-            <text x="14" y="22" className="graph-node-title">
-              {node.label}
-            </text>
-            <text x="14" y="41" className="graph-node-subtitle">
-              {titleCase(node.kind)}
-            </text>
-            <circle cx="126" cy="18" r="6" fill={nodeColor(node.kind)} />
-          </g>
-        ))}
+          {edges.map((edge) => {
+            const source = nodeMap.get(edge.source);
+            const target = nodeMap.get(edge.target);
+            if (!source || !target) {
+              return null;
+            }
+
+            const startX = source.x + 148;
+            const startY = source.y + 30;
+            const endX = target.x;
+            const endY = target.y + 30;
+            const curve = Math.max(50, Math.abs(endX - startX) * 0.45);
+            const path = `M ${startX} ${startY} C ${startX + curve} ${startY}, ${endX - curve} ${endY}, ${endX} ${endY}`;
+            const isSelected = selectedEdgeId === edge.id;
+
+            return (
+              <g key={edge.id}>
+                <path
+                  d={path}
+                  className={
+                    edge.critical_path
+                      ? isSelected
+                        ? "graph-edge graph-edge-critical graph-edge-selected"
+                        : "graph-edge graph-edge-critical"
+                      : isSelected
+                        ? "graph-edge graph-edge-selected"
+                        : "graph-edge"
+                  }
+                  markerEnd="url(#graph-arrow)"
+                />
+                <path
+                  d={path}
+                  className="graph-edge-hit"
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                    onSelectEdge?.(edge.id);
+                  }}
+                />
+                <text x={(startX + endX) / 2} y={(startY + endY) / 2 - 8} className="graph-edge-label">
+                  {edge.protocol}
+                </text>
+              </g>
+            );
+          })}
+
+          {positionedNodes.map((node) => (
+            <g
+              key={node.id}
+              transform={`translate(${node.x}, ${node.y})`}
+              className={
+                dragState?.nodeId === node.id
+                  ? "graph-node graph-node-dragging"
+                  : selectedNodeId === node.id
+                    ? "graph-node graph-node-selected"
+                    : "graph-node"
+              }
+              onPointerDown={(event) => handlePointerDown(event, node)}
+              onPointerMove={(event) => handlePointerMove(event, node.id)}
+              onPointerUp={(event) => handlePointerEnd(event, node.id)}
+              onPointerCancel={(event) => handlePointerEnd(event, node.id)}
+            >
+              <rect width={nodeWidth} height={nodeHeight} rx="18" className="graph-node-card" stroke={nodeColor(node.kind)} />
+              <text x="14" y="22" className="graph-node-title">
+                {node.label}
+              </text>
+              <text x="14" y="41" className="graph-node-subtitle">
+                {titleCase(node.kind)}
+              </text>
+              <circle cx="126" cy="18" r="6" fill={nodeColor(node.kind)} />
+            </g>
+          ))}
+        </g>
       </svg>
     </div>
   );
