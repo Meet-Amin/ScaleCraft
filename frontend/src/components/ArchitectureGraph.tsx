@@ -96,6 +96,51 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+function boundsForNodes(nodes: Array<{ x: number; y: number }>): {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} {
+  if (nodes.length === 0) {
+    return { minX: 0, minY: 0, maxX: graphWidth, maxY: 360 };
+  }
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const node of nodes) {
+    minX = Math.min(minX, node.x);
+    minY = Math.min(minY, node.y);
+    maxX = Math.max(maxX, node.x + nodeWidth);
+    maxY = Math.max(maxY, node.y + nodeHeight);
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
+function fitViewForBounds(
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+  viewBoxWidth: number,
+  viewBoxHeight: number,
+): { scale: number; translateX: number; translateY: number } {
+  const padding = 48;
+  const contentWidth = Math.max(1, bounds.maxX - bounds.minX);
+  const contentHeight = Math.max(1, bounds.maxY - bounds.minY);
+
+  const scaleX = (viewBoxWidth - padding * 2) / contentWidth;
+  const scaleY = (viewBoxHeight - padding * 2) / contentHeight;
+  const scale = clamp(Math.min(scaleX, scaleY), 0.55, 2.6);
+
+  // Transform is effectively: view = (content * scale) + translate
+  const translateX = (viewBoxWidth - contentWidth * scale) / 2 - bounds.minX * scale;
+  const translateY = (viewBoxHeight - contentHeight * scale) / 2 - bounds.minY * scale;
+
+  return { scale, translateX, translateY };
+}
+
 function toCoordinate(clientValue: number, origin: number, renderedSize: number, viewBoxSize: number): number {
   return ((clientValue - origin) / renderedSize) * viewBoxSize;
 }
@@ -126,8 +171,10 @@ export function ArchitectureGraph({
     setNodePositions(defaultNodePositions);
     setDragState(null);
     setPanState(null);
-    setView({ scale: 1, translateX: 0, translateY: 0 });
-  }, [defaultNodePositions]);
+    const bounds = boundsForNodes(defaultNodes);
+    const fitted = fitViewForBounds(bounds, graphWidth, Math.max(360, 120 + Math.max(...defaultNodes.map((node) => node.y), 0)));
+    setView(fitted);
+  }, [defaultNodePositions, defaultNodes]);
 
   const positionedNodes = defaultNodes.map((node) => ({
     ...node,
@@ -245,10 +292,14 @@ export function ArchitectureGraph({
   function resetLayout(): void {
     setNodePositions(defaultNodePositions);
     setDragState(null);
+    const bounds = boundsForNodes(defaultNodes);
+    const fitted = fitViewForBounds(bounds, graphWidth, height);
+    setView(fitted);
   }
 
   function resetView(): void {
-    setView({ scale: 1, translateX: 0, translateY: 0 });
+    const bounds = boundsForNodes(positionedNodes);
+    setView(fitViewForBounds(bounds, graphWidth, height));
     setPanState(null);
   }
 
@@ -298,7 +349,7 @@ export function ArchitectureGraph({
           Auto-layout
         </button>
         <button className="ghost-button ghost-button-inline" type="button" onClick={resetView}>
-          Reset view
+          Fit view
         </button>
       </div>
       <svg
