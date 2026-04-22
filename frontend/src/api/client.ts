@@ -1,12 +1,6 @@
 import type {
-  AnalyzeRisksResponse,
-  ArchitectureSpec,
   GenerateArchitectureResponse,
-  GenerateLoadProfileResponse,
-  GenerateScriptResponse,
-  LoadProfileSpec,
   ParseRequirementResponse,
-  ScriptTarget,
   StructuredRequirementSpec,
 } from "./types";
 
@@ -53,30 +47,5 @@ export const scaleCraftApi = {
   },
   architecture(requirement: StructuredRequirementSpec): Promise<GenerateArchitectureResponse> {
     return apiPost<GenerateArchitectureResponse>("/architecture", { requirement });
-  },
-  loadProfile(requirement: StructuredRequirementSpec): Promise<GenerateLoadProfileResponse> {
-    return apiPost<GenerateLoadProfileResponse>("/load-profile", { requirement });
-  },
-  generateScript(
-    architecture: ArchitectureSpec,
-    loadProfile: LoadProfileSpec,
-    target: ScriptTarget,
-  ): Promise<GenerateScriptResponse> {
-    return apiPost<GenerateScriptResponse>("/generate-script", {
-      architecture,
-      load_profile: loadProfile,
-      target,
-    });
-  },
-  analyzeRisks(
-    requirement: StructuredRequirementSpec,
-    architecture: ArchitectureSpec,
-    loadProfile: LoadProfileSpec,
-  ): Promise<AnalyzeRisksResponse> {
-    return apiPost<AnalyzeRisksResponse>("/analyze-risks", {
-      requirement,
-      architecture,
-      load_profile: loadProfile,
-    });
   },
 };

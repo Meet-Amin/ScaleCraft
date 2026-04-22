@@ -1,19 +1,17 @@
 # ScaleCraft
 
-ScaleCraft converts plain-English product requirements into a production-friendly planning bundle:
+ScaleCraft converts a plain-English product requirement into an architecture planning bundle:
 
 1. Structured system requirements spec
 2. Distributed architecture graph
-3. Realistic load-test scenarios
-4. Generated `k6` and `Locust` scripts
-5. Bottleneck and scaling-risk report
+
+The current MVP focuses on the core path only: `requirement -> architecture`.
 
 ## Stack
 
 - Backend: FastAPI + Pydantic
 - Frontend: React + TypeScript + Vite
 - Graph modeling: NetworkX
-- Script export: k6 and Locust
 - LLM abstraction: provider-agnostic interface with OpenAI support first
 
 ## Repository Layout
@@ -30,19 +28,13 @@ The backend is split into small service classes with typed request and response 
 
 - `RequirementParser`: natural language to structured requirement spec
 - `ArchitectureGenerator`: services, databases, cache, queue, scaling notes, graph edges
-- `LoadProfileGenerator`: traffic model, concurrency, spikes, request mix, ramp plan
-- `ScriptGenerator`: shared generation flow with `k6` and `Locust` exporters
-- `RiskAnalyzer`: bottlenecks, resilience gaps, and scaling recommendations
 
-The parser supports a provider abstraction for LLM-backed parsing, but all downstream generators stay deterministic and testable.
+The parser supports a provider abstraction for LLM-backed parsing, while the architecture generator stays deterministic and testable.
 
 ## API Endpoints
 
 - `POST /parse`
 - `POST /architecture`
-- `POST /load-profile`
-- `POST /generate-script`
-- `POST /analyze-risks`
 - `GET /health`
 
 ## Local Setup
@@ -105,5 +97,5 @@ Placeholder section:
 ## Notes
 
 - Core services avoid demo-only branches and rely on typed intermediate models.
-- Architecture and risk generation are intentionally deterministic for repeatability.
-- The frontend includes example prompts and placeholder mock outputs to keep the UI usable before the first request completes.
+- Architecture generation is intentionally deterministic for repeatability.
+- The frontend is intentionally small: one input, one parsed summary, and one architecture result.

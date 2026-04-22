@@ -195,6 +195,31 @@ code {
     0 18px 44px rgba(45, 27, 72, 0.08);
 }
 
+.architecture-editor-label {
+  margin: 0;
+}
+
+.architecture-editor {
+  width: 100%;
+  min-height: 420px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(75, 50, 126, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: #241b2f;
+  resize: vertical;
+  font-family: "SFMono-Regular", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.architecture-editor:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(149, 104, 255, 0.18),
+    0 18px 44px rgba(45, 27, 72, 0.08);
+}
+
 .actions-row,
 .examples-row,
 .pill-row,
@@ -367,6 +392,11 @@ code {
 .stack-lg {
   display: grid;
   gap: 18px;
+}
+
+.stack-sm {
+  display: grid;
+  gap: 10px;
 }
 
 .stack-md {
@@ -571,6 +601,103 @@ code {
   background: rgba(248, 241, 233, 0.98);
 }
 
+.architecture-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.connection-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.builder-header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.node-list-panel,
+.node-editor-panel,
+.connection-list-panel,
+.connection-editor-panel {
+  align-content: start;
+}
+
+.node-list {
+  display: grid;
+  gap: 10px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.node-list-button {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(88, 56, 148, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #241b2f;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+}
+
+.node-list-button span {
+  color: rgba(71, 49, 118, 0.66);
+  font-size: 0.86rem;
+}
+
+.node-list-button-active {
+  border-color: rgba(140, 91, 255, 0.34);
+  box-shadow: 0 0 0 1px rgba(140, 91, 255, 0.14) inset;
+  background: linear-gradient(135deg, rgba(140, 91, 255, 0.09), rgba(120, 220, 255, 0.08));
+}
+
+.node-form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.node-form-field span {
+  font-weight: 600;
+}
+
+.node-form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(75, 50, 126, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: #241b2f;
+}
+
+.node-form-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(149, 104, 255, 0.18);
+}
+
+.node-form-textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #241b2f;
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+}
+
 .metric-card span,
 .mini-card span,
 .risk-category-tag,
@@ -673,6 +800,15 @@ code {
   fill: rgba(71, 49, 118, 0.66);
 }
 
+.graph-node {
+  cursor: grab;
+  touch-action: none;
+}
+
+.graph-node-dragging {
+  cursor: grabbing;
+}
+
 .graph-node-card {
   fill: rgba(255, 255, 255, 0.96);
   stroke-width: 1.5;
@@ -687,6 +823,17 @@ code {
 .graph-node-subtitle {
   font-size: 10px;
   fill: rgba(71, 49, 118, 0.62);
+  pointer-events: none;
+}
+
+.graph-node-title {
+  pointer-events: none;
+}
+
+.drag-hint {
+  margin: 0;
+  font-size: 0.92rem;
+  color: rgba(71, 49, 118, 0.66);
 }
 
 .topology-lane {
@@ -978,6 +1125,10 @@ code {
   margin-left: 0;
 }
 
+.ghost-button-inline {
+  margin-left: 0;
+}
+
 .severity {
   width: fit-content;
   padding: 5px 10px;
@@ -1044,6 +1195,8 @@ code {
 @media (max-width: 1180px) {
   .hero-layout,
   .visual-summary-grid,
+  .architecture-builder-grid,
+  .connection-builder-grid,
   .risk-grid,
   .topology-board,
   .metric-grid,

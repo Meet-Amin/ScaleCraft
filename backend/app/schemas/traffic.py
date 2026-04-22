@@ -1,7 +1,7 @@
 """Traffic and load-profile schemas for ScaleCraft.
 
-This module exists so the scaffold has a dedicated traffic schema entrypoint,
-while the existing load-profile route and services keep their current imports.
+This module remains as a shared schema entrypoint for traffic models that may
+be used by internal generators, even though the public MVP is architecture-only.
 """
 
 from app.schemas.load_profile import GenerateLoadProfileRequest

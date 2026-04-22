@@ -1,9 +1,6 @@
 import { ArchitectureVisualizationPanel } from "../components/ArchitectureVisualizationPanel";
-import { LoadProfilePanel } from "../components/LoadProfilePanel";
 import { RequirementInput } from "../components/RequirementInput";
 import { RequirementSummaryPanel } from "../components/RequirementSummaryPanel";
-import { RiskAnalysisPanel } from "../components/RiskAnalysisPanel";
-import { ScriptViewerPanel } from "../components/ScriptViewerPanel";
 import { useScaleCraft } from "../hooks/useScaleCraft";
 
 interface HomePageProps {
@@ -17,12 +14,9 @@ export function HomePage({ requirementText, onRequirementTextChange }: HomePageP
     architecture,
     error,
     isLoading,
-    loadProfile,
     parseResult,
-    riskReport,
     pipelineStatus,
     runAnalysis,
-    scripts,
     stepErrors,
   } = useScaleCraft();
 
@@ -49,23 +43,6 @@ export function HomePage({ requirementText, onRequirementTextChange }: HomePageP
           architecture={architecture}
           isLoading={pipelineStatus.architecture === "loading"}
           error={stepErrors.architecture}
-        />
-
-        <LoadProfilePanel
-          loadProfile={loadProfile}
-          isLoading={pipelineStatus.loadProfile === "loading"}
-          error={stepErrors.loadProfile}
-        />
-
-        <ScriptViewerPanel
-          scripts={scripts}
-          isLoading={pipelineStatus.scripts === "loading"}
-          error={stepErrors.scripts}
-        />
-        <RiskAnalysisPanel
-          riskReport={riskReport}
-          isLoading={pipelineStatus.risks === "loading"}
-          error={stepErrors.risks}
         />
       </div>
     </main>

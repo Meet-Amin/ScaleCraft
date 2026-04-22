@@ -14,9 +14,9 @@ export function RequirementInput({ value, isLoading, statusMessage, onChange, on
       <div className="hero-layout">
         <div className="hero-main">
           <div className="hero-copy">
-            <span className="eyebrow">Playful system design, serious output</span>
+            <span className="eyebrow">Plain-English brief to architecture</span>
             <h1>ScaleCraft</h1>
-            <p>Turn one product brief into architecture, traffic, scripts, and risk signals.</p>
+            <p>Turn one product brief into a system architecture you can review with your team.</p>
           </div>
 
           <label className="input-label" htmlFor="requirement-text">
@@ -33,7 +33,7 @@ export function RequirementInput({ value, isLoading, statusMessage, onChange, on
 
           <div className="actions-row">
             <button className="primary-button" onClick={onSubmit} disabled={isLoading || value.trim().length < 20}>
-              {isLoading ? "Generating..." : "Generate"}
+              {isLoading ? "Generating..." : "Generate Architecture"}
             </button>
             {statusMessage ? <span className="status-inline">{statusMessage}</span> : null}
           </div>
@@ -51,15 +51,15 @@ export function RequirementInput({ value, isLoading, statusMessage, onChange, on
           <div className="hero-orb" />
           <div className="hero-note hero-note-top">
             <span>System</span>
-            <strong>Structure</strong>
+            <strong>Shape</strong>
           </div>
           <div className="hero-note hero-note-middle">
-            <span>Traffic</span>
-            <strong>Flow</strong>
+            <span>Service</span>
+            <strong>Layout</strong>
           </div>
           <div className="hero-note hero-note-bottom">
-            <span>Risk</span>
-            <strong>Signals</strong>
+            <span>Scaling</span>
+            <strong>Notes</strong>
           </div>
         </aside>
       </div>
