@@ -137,6 +137,8 @@ export function ArchitectureGraph({
   const height = Math.max(360, 120 + Math.max(...positionedNodes.map((node) => node.y), 0));
 
   const [hoverLane, setHoverLane] = useState<(typeof lanes)[number] | null>(null);
+  const [hoverEdgeId, setHoverEdgeId] = useState<string | null>(null);
+  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
 
   function toContentCoordinate(clientX: number, clientY: number, svg: SVGSVGElement): { x: number; y: number } {
     const bounds = svg.getBoundingClientRect();
@@ -357,6 +359,9 @@ export function ArchitectureGraph({
             const curve = Math.max(50, Math.abs(endX - startX) * 0.45);
             const path = `M ${startX} ${startY} C ${startX + curve} ${startY}, ${endX - curve} ${endY}, ${endX} ${endY}`;
             const isSelected = selectedEdgeId === edge.id;
+            const isHovered = hoverEdgeId === edge.id;
+            const showLabel = isSelected || isHovered;
+            const showFlow = isSelected || isHovered;
 
             return (
               <g key={edge.id}>
@@ -373,15 +378,28 @@ export function ArchitectureGraph({
                   }
                   markerEnd="url(#graph-arrow)"
                 />
+                {showFlow ? (
+                  <path
+                    d={path}
+                    className={edge.critical_path ? "graph-edge-flow graph-edge-flow-critical" : "graph-edge-flow"}
+                    markerEnd="url(#graph-arrow)"
+                  />
+                ) : null}
                 <path
                   d={path}
-                  className="graph-edge-hit"
+                  className={isHovered ? "graph-edge-hit graph-edge-hit-hovered" : "graph-edge-hit"}
+                  onPointerEnter={() => setHoverEdgeId(edge.id)}
+                  onPointerLeave={() => setHoverEdgeId((current) => (current === edge.id ? null : current))}
                   onPointerDown={(event) => {
                     event.stopPropagation();
                     onSelectEdge?.(edge.id);
                   }}
                 />
-                <text x={(startX + endX) / 2} y={(startY + endY) / 2 - 8} className="graph-edge-label">
+                <text
+                  x={(startX + endX) / 2}
+                  y={(startY + endY) / 2 - 8}
+                  className={showLabel ? "graph-edge-label graph-edge-label-visible" : "graph-edge-label"}
+                >
                   {edge.protocol}
                 </text>
               </g>
@@ -397,10 +415,18 @@ export function ArchitectureGraph({
                   ? "graph-node graph-node-dragging"
                   : selectedNodeId === node.id
                     ? "graph-node graph-node-selected"
-                    : "graph-node"
+                    : hoverNodeId === node.id
+                      ? "graph-node graph-node-hovered"
+                      : "graph-node"
               }
-              onPointerEnter={() => setHoverLane(laneForKind(node.kind))}
-              onPointerLeave={() => setHoverLane(null)}
+              onPointerEnter={() => {
+                setHoverLane(laneForKind(node.kind));
+                setHoverNodeId(node.id);
+              }}
+              onPointerLeave={() => {
+                setHoverLane(null);
+                setHoverNodeId((current) => (current === node.id ? null : current));
+              }}
               onPointerDown={(event) => handlePointerDown(event, node)}
               onPointerMove={(event) => handlePointerMove(event, node.id)}
               onPointerUp={(event) => handlePointerEnd(event, node.id)}
@@ -413,6 +439,7 @@ export function ArchitectureGraph({
               <text x="14" y="41" className="graph-node-subtitle">
                 {titleCase(node.kind)}
               </text>
+              <circle cx="126" cy="18" r="12" className="graph-node-aura" fill={nodeColor(node.kind)} />
               <circle cx="126" cy="18" r="6" fill={nodeColor(node.kind)} />
             </g>
           ))}
