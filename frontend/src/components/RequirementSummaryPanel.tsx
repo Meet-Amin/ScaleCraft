@@ -19,7 +19,32 @@ export function RequirementSummaryPanel({ parseResult, isLoading, error }: Requi
   return (
     <SectionCard title="Requirement Summary" subtitle="Visual overview of the parsed product brief">
       {!parseResult && isLoading ? (
-        <StateNotice title="Parsing requirement" message="Converting natural language into a typed product spec." tone="loading" />
+        <div className="skeleton-stack" aria-label="Parsing requirement">
+          <div className="skeleton-card">
+            <div className="skeleton skeleton-line-lg" style={{ width: "46%" }} />
+            <div className="skeleton skeleton-line" style={{ width: "88%", marginTop: 10 }} />
+            <div className="skeleton skeleton-line" style={{ width: "76%", marginTop: 10 }} />
+          </div>
+          <div className="skeleton-grid-4">
+            <div className="skeleton-card">
+              <div className="skeleton skeleton-line" style={{ width: "68%" }} />
+              <div className="skeleton skeleton-line-lg" style={{ width: "52%", marginTop: 12 }} />
+            </div>
+            <div className="skeleton-card">
+              <div className="skeleton skeleton-line" style={{ width: "72%" }} />
+              <div className="skeleton skeleton-line-lg" style={{ width: "44%", marginTop: 12 }} />
+            </div>
+            <div className="skeleton-card">
+              <div className="skeleton skeleton-line" style={{ width: "66%" }} />
+              <div className="skeleton skeleton-line-lg" style={{ width: "58%", marginTop: 12 }} />
+            </div>
+            <div className="skeleton-card">
+              <div className="skeleton skeleton-line" style={{ width: "64%" }} />
+              <div className="skeleton skeleton-line-lg" style={{ width: "48%", marginTop: 12 }} />
+            </div>
+          </div>
+          <StateNotice title="Parsing requirement" message="Converting natural language into a typed product spec." tone="loading" />
+        </div>
       ) : null}
       {error ? <StateNotice title="Requirement error" message={error} tone="error" /> : null}
       {!parseResult && !isLoading ? (

@@ -136,6 +136,8 @@ export function ArchitectureGraph({
   const nodeMap = new Map(positionedNodes.map((node) => [node.id, node]));
   const height = Math.max(360, 120 + Math.max(...positionedNodes.map((node) => node.y), 0));
 
+  const [hoverLane, setHoverLane] = useState<(typeof lanes)[number] | null>(null);
+
   function toContentCoordinate(clientX: number, clientY: number, svg: SVGSVGElement): { x: number; y: number } {
     const bounds = svg.getBoundingClientRect();
     const viewBoxX = toCoordinate(clientX, bounds.left, bounds.width, graphWidth);
@@ -325,6 +327,16 @@ export function ArchitectureGraph({
         <g transform={`translate(${view.translateX} ${view.translateY}) scale(${view.scale})`}>
           {lanes.map((lane, index) => (
             <g key={lane}>
+              {hoverLane === lane ? (
+                <rect
+                  x={56 + index * 246}
+                  y={10}
+                  width={laneWidth + laneSpacing}
+                  height={height - 18}
+                  rx={18}
+                  className="graph-lane-highlight"
+                />
+              ) : null}
               <text x={72 + index * 246} y={28} className="graph-lane-label">
                 {titleCase(lane)}
               </text>
@@ -387,6 +399,8 @@ export function ArchitectureGraph({
                     ? "graph-node graph-node-selected"
                     : "graph-node"
               }
+              onPointerEnter={() => setHoverLane(laneForKind(node.kind))}
+              onPointerLeave={() => setHoverLane(null)}
               onPointerDown={(event) => handlePointerDown(event, node)}
               onPointerMove={(event) => handlePointerMove(event, node.id)}
               onPointerUp={(event) => handlePointerEnd(event, node.id)}
